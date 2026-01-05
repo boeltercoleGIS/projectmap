@@ -15,7 +15,7 @@ export const SERVICES = {
 
 export const MAP_CONFIG = {
   center: [45.0566, -92.8085],
-  zoom: 14,
+  zoom: 12,
   scrollWheelZoom: true
 };
 
@@ -26,8 +26,8 @@ export const BASEMAPS = {
     label: 'Vector'
   },
   satellite: {
-    url: 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryTopo/MapServer/tile/{z}/{y}/{x}',
-    options: { maxZoom: 20, attribution: 'Tiles courtesy of the <a href="https://usgs.gov/">U.S. Geological Survey</a>' },
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    options: { maxZoom: 20, attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community' },
     label: 'Satellite'
   }
 };
@@ -53,4 +53,5 @@ export const BOUNDARY = {
     fillOpacity: 0
   }
 };
+
 
