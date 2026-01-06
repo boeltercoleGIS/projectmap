@@ -31,7 +31,7 @@ export const BASEMAPS = Object.freeze({
     options: {
       maxZoom: 20,
       attribution:
-        'Tiles &copy;'
+        'Tiles &copy; Esri'
     },
     label: 'Satellite'
   }
@@ -75,6 +75,7 @@ export const BOUNDARY = Object.freeze({
     fillOpacity: 0
   })
 });
+
 
 
 
