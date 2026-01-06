@@ -463,3 +463,129 @@ body { margin: 0; padding: 0; }
 }
 
 .attachment-modal__open:hover { background: #f4f4f4; }
+
+
+/* --------------------- Splash Screen --------------------- */
+.splash.hidden {
+  display: none;
+}
+
+.splash {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.splash__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.splash__panel {
+  position: relative;
+  width: min(980px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+
+
+  z-index: 1;
+}
+
+.splash__close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 28px;
+  line-height: 1;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 2px 10px;
+  border-radius: 10px;
+}
+
+.splash__close:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.splash__header {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 16px 52px 12px 16px;
+  border-bottom: 1px solid #eee;
+}
+
+.splash__logo {
+  width: 76px;
+  height: 76px;
+  object-fit: contain;
+}
+
+.splash__title {
+  font-weight: 900;
+  font-size: clamp(18px, 2vw, 26px);
+}
+
+.splash__content {
+  padding: 14px 16px 16px 16px;
+  overflow-y: auto;
+}
+
+.splash__videoWrap {
+  border: 1px solid #e6e6e6;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #000;
+}
+
+.splash__video,
+.splash__iframe {
+  width: 100%;
+  height: min(52vh, 420px);
+  display: block;
+  background: #000;
+}
+
+.splash__disclaimer {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f8f8f8;
+  border: 1px solid #eee;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.splash__actions {
+  margin-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.splash__btn {
+  border: 1px solid #ddd;
+  background: #cc4529;
+  color: #fff;
+  font-weight: 800;
+  border-radius: 12px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.splash__btn:hover {
+  filter: brightness(0.95);
+}
