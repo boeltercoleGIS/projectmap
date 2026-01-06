@@ -1,60 +1,74 @@
 // js/splash.js
+const KEY = 'stillwater_splash_v2';
 
-
-const STORAGE_KEY = 'stillwater_splash_v1';
-
-function isHomeHash() {
-  const h = window.location.hash || '';
-  return h === '' || h === '#home';
+function $(sel) {
+  return document.querySelector(sel);
 }
 
-export function showSplashIfNeeded() {
-  const splash = document.getElementById('splash');
+function openSplash() {
+  const splash = $('#splash');
   if (!splash) return;
 
-  // Do not show on deep links
-  if (!isHomeHash()) return;
-
-
-  if (localStorage.getItem(STORAGE_KEY) === '1') return;
-
-  openSplash(splash);
-}
-
-function openSplash(splash) {
   splash.classList.remove('hidden');
   splash.setAttribute('aria-hidden', 'false');
 
-  splash.addEventListener('click', onClick);
-  window.addEventListener('keydown', onKeydown);
-
-  document.getElementById('splash-continue')?.focus?.();
+  // focus the continue button 
+  $('#splash-continue')?.focus?.();
 }
 
 function closeSplash() {
-  const splash = document.getElementById('splash');
+  const splash = $('#splash');
   if (!splash) return;
 
   splash.classList.add('hidden');
   splash.setAttribute('aria-hidden', 'true');
-
-  localStorage.setItem(STORAGE_KEY, '1');
-
-  splash.removeEventListener('click', onClick);
-  window.removeEventListener('keydown', onKeydown);
+  localStorage.setItem(KEY, '1');
 }
 
-function onClick(e) {
-  const t = e.target;
-  if (!t) return;
+function wireSplashEventsOnce() {
+  const splash = $('#splash');
+  if (!splash || splash.__wired) return;
+  splash.__wired = true;
 
-  if (t.id === 'splash-continue') return closeSplash();
+  splash.addEventListener('click', (e) => {
+    const t = e.target;
+    if (!t) return;
 
-  if (t.getAttribute?.('data-splash-close') === '1') {
-    return closeSplash();
+
+    if (t.id === 'splash-continue') return closeSplash();
+
+    const closeAttr = t.getAttribute?.('data-splash-close');
+    if (closeAttr === '1') return closeSplash();
+  });
+
+  window.addEventListener('keydown', (e) => {
+    const splashNow = $('#splash');
+    const isOpen = splashNow && !splashNow.classList.contains('hidden');
+    if (!isOpen) return;
+
+    if (e.key === 'Escape') closeSplash();
+  });
+}
+
+export function showSplashIfNeeded({ force = false } = {}) {
+
+  const run = () => {
+    wireSplashEventsOnce();
+
+    if (force) {
+      openSplash();
+      return;
+    }
+
+    const alreadySeen = localStorage.getItem(KEY) === '1';
+    if (alreadySeen) return;
+
+    openSplash();
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', run, { once: true });
+  } else {
+    run();
   }
-}
-
-function onKeydown(e) {
-  if (e.key === 'Escape') closeSplash();
 }
