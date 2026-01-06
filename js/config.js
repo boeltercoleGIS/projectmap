@@ -31,7 +31,7 @@ export const BASEMAPS = Object.freeze({
     options: {
       maxZoom: 20,
       attribution:
-        'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        'Tiles &copy;'
     },
     label: 'Satellite'
   }
@@ -75,5 +75,6 @@ export const BOUNDARY = Object.freeze({
     fillOpacity: 0
   })
 });
+
 
 
