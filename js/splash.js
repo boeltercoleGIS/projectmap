@@ -1,63 +1,60 @@
 // js/splash.js
-// Shows a splash screen once per browser (localStorage).
-// Safe with hash routing: it does not modify the URL.
 
-const KEY = 'stillwater_splash_v1';
 
-function qs(sel) {
-  return document.querySelector(sel);
+const STORAGE_KEY = 'stillwater_splash_v1';
+
+function isHomeHash() {
+  const h = window.location.hash || '';
+  return h === '' || h === '#home';
 }
 
 export function showSplashIfNeeded() {
-  const splash = qs('#splash');
+  const splash = document.getElementById('splash');
   if (!splash) return;
 
-  // show only once per browser (until storage cleared)
-  const alreadySeen = localStorage.getItem(KEY) === '1';
-  if (alreadySeen) return;
+  // Do not show on deep links
+  if (!isHomeHash()) return;
 
-  openSplash();
+
+  if (localStorage.getItem(STORAGE_KEY) === '1') return;
+
+  openSplash(splash);
 }
 
-function openSplash() {
-  const splash = qs('#splash');
-  if (!splash) return;
-
+function openSplash(splash) {
   splash.classList.remove('hidden');
   splash.setAttribute('aria-hidden', 'false');
 
-  // close behaviors
-  splash.addEventListener('click', onSplashClick);
-  window.addEventListener('keydown', onSplashKeydown);
+  splash.addEventListener('click', onClick);
+  window.addEventListener('keydown', onKeydown);
 
-  // focus
-  qs('#splash-continue')?.focus?.();
+  document.getElementById('splash-continue')?.focus?.();
 }
 
 function closeSplash() {
-  const splash = qs('#splash');
+  const splash = document.getElementById('splash');
   if (!splash) return;
 
   splash.classList.add('hidden');
   splash.setAttribute('aria-hidden', 'true');
 
-  localStorage.setItem(KEY, '1');
+  localStorage.setItem(STORAGE_KEY, '1');
 
-  splash.removeEventListener('click', onSplashClick);
-  window.removeEventListener('keydown', onSplashKeydown);
+  splash.removeEventListener('click', onClick);
+  window.removeEventListener('keydown', onKeydown);
 }
 
-function onSplashClick(e) {
+function onClick(e) {
   const t = e.target;
   if (!t) return;
 
-  // close if clicked backdrop, X, or Continue
   if (t.id === 'splash-continue') return closeSplash();
 
-  const closeAttr = t.getAttribute?.('data-splash-close');
-  if (closeAttr === '1') return closeSplash();
+  if (t.getAttribute?.('data-splash-close') === '1') {
+    return closeSplash();
+  }
 }
 
-function onSplashKeydown(e) {
+function onKeydown(e) {
   if (e.key === 'Escape') closeSplash();
 }
