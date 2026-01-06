@@ -1,22 +1,16 @@
 // js/router.js
-// Fully config-driven router (no hardcoded pane IDs, table IDs, or field lists).
-//
-// Requirements:
-// - You call setupSidebarRouting(sidebar, map, sidebarConfig) from main.js
-// - sidebarConfig defines:
-//    - panes with { id, kind: 'list'|'detail'|'home', where?, list?, detail? }
-//    - one detail pane with detail: { tableId, fields, attachments?: { hostId } }
-//
-// Router responsibilities:
-// - Hash -> open pane OR open detail route (project-{OBJECTID})
-// - Apply points layer filter based on pane.where when on a pane route
-// - For project routes: open the detail pane from config, render fields from config
-// - Maintain lastOriginPaneId for the back button
-//
-// NOTE: This router assumes project routes are `#project-123`
-// and list row clicks set hashes accordingly.
+// Config-driven hash router:
+// - Pane routes: #home, #pane-xyz
+// - Project routes: #project-123
+// Adds: fit-to-boundary on #home with sidebar offset on wide screens.
 
-import { projectsLayer, markerLookup } from './layers.js';
+import {
+  projectsLayer,
+  markerLookup,
+  jurisdictionBoundaryReady,
+  jurisdictionBoundaryLayer
+} from './layers.js';
+
 import {
   showOnlyProject,
   highlightFeature,
@@ -41,9 +35,8 @@ let lastPaneId = 'home';
 let projectRouteToken = 0;
 
 /* -----------------------------
-   Config helpers
+   Hash helpers
 ----------------------------- */
-
 function getHashId() {
   return window.location.hash.replace('#', '');
 }
@@ -58,7 +51,6 @@ function isPaneHash(h, cfg) {
 }
 
 function isOriginPaneId(id, cfg) {
-  // "origin" panes are anything except the detail pane (so back button goes there)
   const pane = cfg.find((p) => p.id === id);
   return !!pane && pane.kind !== 'detail';
 }
@@ -71,9 +63,68 @@ function getPaneById(cfg, id) {
   return cfg.find((p) => p.id === id) || null;
 }
 
-/**
- * Robust extraction of OBJECTID from Esri Leaflet / Cluster click events.
- */
+/* -----------------------------
+   Boundary fit on #home
+----------------------------- */
+function nextFrame() {
+  return new Promise((r) => requestAnimationFrame(() => r()));
+}
+
+async function fitHomeToBoundary(map) {
+  try {
+    if (jurisdictionBoundaryReady) {
+      await jurisdictionBoundaryReady;
+    }
+  } catch {
+    return;
+  }
+
+  const boundary = jurisdictionBoundaryLayer;
+  if (!boundary || !boundary.getBounds) return;
+
+  // Allow sidebar animation + DOM layout to settle
+  await new Promise(r => requestAnimationFrame(r));
+  await new Promise(r => requestAnimationFrame(r));
+
+  const bounds = boundary.getBounds();
+  if (!bounds?.isValid?.()) return;
+
+  const sidebarEl = document.getElementById('sidebar');
+  const sidebarWidth = sidebarEl ? sidebarEl.getBoundingClientRect().width : 0;
+  const buffer = 180;
+
+  if (window.innerWidth > 1100 && sidebarWidth > 0) {
+    const mapWidth = map.getSize().x;
+
+    const sw = bounds.getSouthWest();
+    const ne = bounds.getNorthEast();
+    const lngSpan = ne.lng - sw.lng;
+    const lngShift = ((sidebarWidth + buffer) / mapWidth) * lngSpan;
+
+    const adjustedBounds = L.latLngBounds(
+      L.latLng(sw.lat, sw.lng - lngShift),
+      L.latLng(ne.lat, ne.lng - lngShift)
+    );
+
+    map.flyToBounds(adjustedBounds, {
+      padding: [20, 20],
+      duration: 1.4,
+      easeLinearity: 0.1,
+      noMoveStart: true
+    });
+  } else {
+    map.flyToBounds(bounds, {
+      padding: [20, 20],
+      duration: 1.4,
+      easeLinearity: 0.1,
+      noMoveStart: true
+    });
+  }
+}
+
+/* -----------------------------
+   Robust OBJECTID extraction
+----------------------------- */
 function getObjectIdFromEsriClick(e) {
   const id1 = e?.feature?.properties?.OBJECTID;
   if (id1 != null) return Number(id1);
@@ -134,7 +185,6 @@ function waitForMarker(objectId, timeoutMs = 3500) {
 /* -----------------------------
    Detail rendering (config-driven)
 ----------------------------- */
-
 function fillDetailTableFromFeature(detailPane, feature) {
   const tableId = detailPane?.detail?.tableId;
   const fields = detailPane?.detail?.fields;
@@ -179,11 +229,8 @@ function startDetailAttachments(detailPane, objectId) {
   const hostId = detailPane?.detail?.attachments?.hostId;
   if (!hostId) return;
 
-  // renderProjectAttachments writes into #project-attachments in your current utils.js.
-  // If you later make that hostId-configurable, update utils.js accordingly.
-  // For now: enforce hostId === 'project-attachments' to avoid mismatches.
+  // Your current utils.js renders into #project-attachments.
   if (hostId !== 'project-attachments') {
-    // Best-effort: clear & do nothing to avoid writing to wrong element.
     const host = document.getElementById(hostId);
     if (host) host.innerHTML = '';
     return;
@@ -193,11 +240,9 @@ function startDetailAttachments(detailPane, objectId) {
 }
 
 /* -----------------------------
-   Back button (config-driven)
+   Back button
 ----------------------------- */
-
 function setBackButtonTarget(detailPane) {
-  // We still use the shared class name created by sidebarBuilder: .sidebar-back-button
   const backButton = document.querySelector(`#${detailPane.id} .sidebar-back-button`);
   if (!backButton) return;
 
@@ -212,7 +257,6 @@ function setBackButtonTarget(detailPane) {
 /* -----------------------------
    Route handlers
 ----------------------------- */
-
 async function handleProjectHash(map, sidebar, cfg) {
   const detailPane = getDetailPane(cfg);
   if (!detailPane) return;
@@ -240,6 +284,7 @@ async function handleProjectHash(map, sidebar, cfg) {
     const fields = Array.isArray(detailPane?.detail?.fields)
       ? detailPane.detail.fields.map((f) => f.key).filter(Boolean)
       : [];
+
     const featNow = await fetchProjectById(objectId, fields);
     if (myToken !== projectRouteToken) return;
 
@@ -270,8 +315,8 @@ async function handleProjectHash(map, sidebar, cfg) {
   if (pn) showRelatedFeatures(pn, map, { fit: true });
 }
 
-function handlePaneHash(sidebar, paneId, cfg) {
-  // cancel in-flight project work when switching to a pane route
+function handlePaneHash(map, sidebar, paneId, cfg) {
+  // cancel in-flight project work when switching panes
   projectRouteToken++;
 
   const targetId = paneId || 'home';
@@ -305,12 +350,16 @@ function handlePaneHash(sidebar, paneId, cfg) {
   if (detailPane && resolvedPane.id !== detailPane.id) {
     clearDetailAttachments(detailPane);
   }
+
+  // Fit boundary when on home
+  if (resolvedPane.id === 'home') {
+    fitHomeToBoundary(map);
+  }
 }
 
 /* -----------------------------
    Setup
 ----------------------------- */
-
 export function setupSidebarRouting(sidebar, map, sidebarConfig) {
   const cfg = Array.isArray(sidebarConfig) ? sidebarConfig : [];
 
@@ -367,7 +416,7 @@ export function setupSidebarRouting(sidebar, map, sidebarConfig) {
     const h = getHashId();
 
     if (!h) {
-      handlePaneHash(sidebar, 'home', cfg);
+      handlePaneHash(map, sidebar, 'home', cfg);
       return;
     }
 
@@ -378,7 +427,7 @@ export function setupSidebarRouting(sidebar, map, sidebarConfig) {
 
     // Pane navigation: ensure we aren't stuck on single-OBJECTID filter
     resetProjectFilter();
-    handlePaneHash(sidebar, h, cfg);
+    handlePaneHash(map, sidebar, h, cfg);
   };
 
   // Initial load
@@ -395,8 +444,6 @@ export function setupSidebarRouting(sidebar, map, sidebarConfig) {
  * External setter (used by list clicks)
  */
 export function setLastOriginPane(paneId) {
-  // This is called by sidebarBuilder when a list row is clicked
-  // to keep the back button correct.
   if (typeof paneId === 'string' && paneId) {
     lastOriginPaneId = paneId;
     lastPaneId = paneId;
