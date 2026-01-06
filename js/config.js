@@ -27,7 +27,7 @@ export const BASEMAPS = Object.freeze({
   },
   satellite: {
     // keep {r} for retina support (plugin/tooling may request it)
-    url: 'https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}.jpg',
+    url: 'https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}{r}',
     options: {
       maxZoom: 20,
       attribution:
@@ -75,3 +75,4 @@ export const BOUNDARY = Object.freeze({
     fillOpacity: 0
   })
 });
+
