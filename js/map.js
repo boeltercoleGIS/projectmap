@@ -1,5 +1,13 @@
 // js/map.js
-import { cartoLayer, satelliteLayer, projectsLayer, linesLayer, polygonsLayer, loadJurisdictionBoundary } from './layers.js';
+import {
+  cartoLayer,
+  satelliteLayer,
+  projectsLayer,
+  linesLayer,
+  polygonsLayer,
+  loadJurisdictionBoundary
+} from './layers.js';
+
 import { MAP_CONFIG, BASEMAPS, BOUNDARY } from './config.js';
 import { initHoverTooltip, wireHoverTooltipToProjectsLayer } from './utils.js';
 
@@ -11,20 +19,24 @@ export function createMap(mapId) {
     layers: [cartoLayer]
   });
 
-  
+  // Tooltip system (kept from your current setup)
   initHoverTooltip(map);
-  wireHoverTooltipToProjectsLayer(); 
+  wireHoverTooltipToProjectsLayer();
 
+  // Primary layers
   cartoLayer.addTo(map);
   projectsLayer.addTo(map);
 
+  // Related geometry layers (hidden until needed)
   linesLayer.addTo(map).setWhere('1=0');
   polygonsLayer.addTo(map).setWhere('1=0');
 
+  // Boundary (no fitting here — router will fit when #home is active)
   loadJurisdictionBoundary(BOUNDARY.url, BOUNDARY.style)
     .then((boundaryLayer) => boundaryLayer.addTo(map))
     .catch((err) => console.error('Failed to load jurisdiction boundary GeoJSON:', err));
 
+  // Basemap switcher
   L.basemapControl({
     position: 'bottomleft',
     layers: [
